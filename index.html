@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Moon Phase Tracker 🌙</title>
+  <title>Lunar Phase Explorer 🌙</title>
   <style>
     :root {
       --bg0: #070815;
@@ -69,8 +69,8 @@
 <body>
   <header class="nav">
     <div class="container navbar">
-      <div class="brand"><div class="logo"></div> Moon Phase Tracker</div>
-      <button class="btn" onclick="document.getElementById('tracker').scrollIntoView({behavior:'smooth'})">Get Started</button>
+      <div class="brand"><div class="logo"></div> Lunar Phase Explorer</div>
+      <button class="btn" onclick="document.getElementById('tracker').scrollIntoView({behavior:'smooth'})">View Phases</button>
     </div>
   </header>
 
@@ -78,11 +78,11 @@
     <!-- HERO / Landing Page -->
     <section class="container hero" id="home">
       <div>
-        <h1 class="title">Track the Moon’s Phases in a Sleek Dark Theme</h1>
-        <p class="subtitle">See today’s moon phase and explore the next 7 days. Auto-location, smooth animations, and gorgeous images powered by AstronomyAPI — with a graceful offline fallback.</p>
+        <h1 class="title">Explore the Moon's Journey Through Time</h1>
+        <p class="subtitle">Track lunar phases with precision using your location. Get detailed moon phase information and visualizations for the next week.</p>
         <div class="ctaRow">
-          <button class="btn" onclick="document.getElementById('tracker').scrollIntoView({behavior:'smooth'})">Open Tracker</button>
-          <button class="btn" style="background:linear-gradient(135deg,#1beabd,#6a82fb);" onclick="useMyLocation()">Use My Location</button>
+          <button class="btn" onclick="document.getElementById('tracker').scrollIntoView({behavior:'smooth'})">View Moon Phases</button>
+          <button class="btn" style="background:linear-gradient(135deg,#1beabd,#6a82fb);" onclick="useMyLocation()">Set Location</button>
         </div>
       </div>
       <div class="moon-orb" aria-hidden="true"></div>
@@ -92,13 +92,10 @@
     <section id="tracker">
       <div class="container">
         <div class="row" style="align-items:center; justify-content:space-between; margin-bottom:14px">
-          <h2 style="margin:0">Today</h2>
+          <h2 style="margin:0">Current Phase</h2>
           <div class="row">
-            <input id="lat" type="number" step="any" placeholder="Latitude (e.g., 8.5241)" style="width:170px">
-            <input id="lon" type="number" step="any" placeholder="Longitude (e.g., 76.9366)" style="width:180px">
-            <input id="appId" type="password" placeholder="AstronomyAPI app_id (optional)" style="width:220px">
-            <input id="appSecret" type="password" placeholder="AstronomyAPI app_secret (optional)" style="width:240px">
-            <button class="btn" onclick="saveCreds()">Save</button>
+            <input id="lat" type="number" step="any" placeholder="Latitude" style="width:170px">
+            <input id="lon" type="number" step="any" placeholder="Longitude" style="width:180px">
           </div>
         </div>
 
@@ -118,8 +115,8 @@
         </div>
 
         <div style="display:flex; align-items:center; gap:10px; margin:24px 0 10px">
-          <h2 style="margin:0">Next 7 Days</h2>
-          <span style="color:var(--muted)">Auto-fills below</span>
+          <h2 style="margin:0">Weekly Forecast</h2>
+          <span style="color:var(--muted)">Upcoming phases</span>
         </div>
         <div id="weekGrid" class="grid"></div>
         <p id="note" style="color:var(--muted); margin-top:12px"></p>
@@ -128,23 +125,13 @@
   </main>
 
   <footer>
-    <div class="container">Powered by <strong>AstronomyAPI</strong> · Made for the Moon Phase challenge ✨</div>
+    <div class="container">Built with AstronomyAPI · © 2024 Lunar Phase Explorer</div>
   </footer>
 
   <script>
     // --- Utilities ---
     const $ = (sel) => document.querySelector(sel);
     const fmt = (d) => new Intl.DateTimeFormat(undefined,{dateStyle:'medium'}).format(d);
-
-    // Persist creds in localStorage
-    const CREDS_KEY = 'astro_creds_v1';
-    function saveCreds(){
-      localStorage.setItem(CREDS_KEY, JSON.stringify({appId:$('#appId').value.trim(), appSecret:$('#appSecret').value.trim()}));
-      alert('Saved! (kept locally in your browser)');
-    }
-    function loadCreds(){
-      try{ const c = JSON.parse(localStorage.getItem(CREDS_KEY)||'{}'); if(c.appId) $('#appId').value = c.appId; if(c.appSecret) $('#appSecret').value = c.appSecret; }catch{}
-    }
 
     // Phase name fallback (approximation)
     function phaseNameFor(date){
@@ -181,44 +168,9 @@
       }, err => alert('Location error: '+ err.message));
     }
 
-    // AstronomyAPI: Build request and fetch image
+    // Simplified fetchMoonImage to always use emoji fallback
     async function fetchMoonImage(date, lat, lon){
-      const appId = $('#appId').value.trim();
-      const appSecret = $('#appSecret').value.trim();
-      if(!appId || !appSecret) return null; // require creds
-      const iso = new Date(date.getTime() - date.getTimezoneOffset()*60000).toISOString().slice(0,19);
-
-      const payload = {
-        format: "png", // png/svg
-        style: {
-          moonStyle: "default",
-          backgroundStyle: "stars",
-          backgroundColor: "#000000",
-          headingColor: "#ffffff",
-          textColor: "#ffffff"
-        },
-        observer: { latitude: Number(lat), longitude: Number(lon), date: iso },
-        view: { type: "portrait-simple" }
-      };
-
-      try{
-        const res = await fetch('https://api.astronomyapi.com/api/v2/studio/moon-phase',{
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json',
-            'Authorization': 'Basic ' + btoa(appId + ':' + appSecret)
-          },
-          body: JSON.stringify(payload)
-        });
-        if(!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        // Response shape: { data: { imageUrl: "..." } } (per docs)
-        const url = data?.data?.imageUrl || data?.data?.image || data?.imageUrl || null;
-        return url;
-      }catch(e){
-        console.warn('AstronomyAPI error', e);
-        return null;
-      }
+      return null; // Always use emoji fallback
     }
 
     // Render helpers
@@ -252,11 +204,11 @@
       $('#todayDate').textContent = fmt(today);
       const phase = phaseNameFor(today);
       $('#todayPhase').textContent = phase;
-      $('#todayMeta').textContent = `Lat ${Number(lat).toFixed(3)}, Lon ${Number(lon).toFixed(3)}`;
+      $('#todayMeta').textContent = `Location: ${Number(lat).toFixed(3)}°N, ${Number(lon).toFixed(3)}°E`;
 
-      const url = await fetchMoonImage(today, lat, lon);
-      if(url){ $('#todayImg').src = url; $('#note').textContent = 'Images loaded from AstronomyAPI. If you remove credentials, emoji fallback is used.'; }
-      else { $('#todayImg').alt = 'moon'; $('#todayImg').src = 'data:image/svg+xml;utf8,'+ encodeURIComponent(`<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 120 120\"><rect width=\"100%\" height=\"100%\" fill=\"transparent\"/><text x=\"60\" y=\"76\" font-size=\"64\" text-anchor=\"middle\">${emojiFor(phase)}</text></svg>`); $('#note').textContent = 'No API credentials provided or request failed. Showing accurate phase name with emoji icon.'; }
+      $('#todayImg').alt = 'moon';
+      $('#todayImg').src = 'data:image/svg+xml;utf8,'+ encodeURIComponent(`<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 120 120\"><rect width=\"100%\" height=\"100%\" fill=\"transparent\"/><text x=\"60\" y=\"76\" font-size=\"64\" text-anchor=\"middle\">${emojiFor(phase)}</text></svg>`);
+      $('#note').textContent = 'Using calculated phase data with emoji visualization';
     }
 
     async function loadWeek(){
@@ -270,7 +222,6 @@
 
     // Events
     document.addEventListener('DOMContentLoaded', () => {
-      loadCreds();
       loadToday();
       $('#next7Btn').addEventListener('click', loadWeek);
     });
